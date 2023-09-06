@@ -13,7 +13,7 @@ app.url_map.strict_slashes = False
 CORS(app)
 
 # create the jackson family object
-jackson_family = FamilyStructure("Jackson")
+jackson_family = FamilyStructure()
 
 # Handle/serialize errors like a JSON object
 @app.errorhandler(APIException)
@@ -26,17 +26,31 @@ def sitemap():
     return generate_sitemap(app)
 
 @app.route('/members', methods=['GET'])
-def handle_hello():
-
-    # this is how you can use the Family datastructure by calling its methods
-    members = jackson_family.get_all_members()
-    response_body = {
-        "hello": "world",
-        "family": members
-    }
+def get_members():
+    members_list = jackson_family.get_all_members()
+    return jsonify(members_list), 200
 
 
-    return jsonify(response_body), 200
+@app.route('/member', methods=['POST'])
+def add_member():
+    new_member = request.json
+    jackson_family.add_member(new_member)
+    return jsonify({"message": "Member added"}), 200
+
+@app.route('/member/<int:member_id>', methods=['GET'])
+def get_member(member_id):
+    member = jackson_family.get_member(member_id)
+    if member is None:
+        return jsonify({"message": "Member not found"}), 400
+    return jsonify(member), 200
+
+@app.route('/member/<int:member_id>', methods=['DELETE'])
+def delete_member(member_id):
+    result = jackson_family.delete_member(member_id)
+    if result:
+        return jsonify({"done": True}), 200
+    else:
+        return jsonify({"message": "Member not found"}), 400
 
 # this only runs if `$ python src/app.py` is executed
 if __name__ == '__main__':
